@@ -2,62 +2,76 @@ package com.amigoscode;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
 @SpringBootApplication
 @RestController
+@RequestMapping("api/v1/customers")
 public class Main {
+
+    private final CustomerRepository customerRepository;
+
+    public Main(CustomerRepository customerRepository) {
+        this.customerRepository = customerRepository;
+    }
+
+
     public static void main(String[] args) {
         SpringApplication.run(Main.class, args);
     }
 
-    @GetMapping("greet")
-    public GreetResponse greet() {
-        GreetResponse greetResponse = new GreetResponse("Hello", List.of("Java", "Golang", "Javascript"), new Person("Amir", 18, 30_000)); // Es wird ein Objekt der Klasse erstellt und zurückgegeben
-        return greetResponse;
+    @GetMapping
+    public List<Customer> getCustomers(){
+        return customerRepository.findAll();
     }
 
-    record Person(String name, int age, double savings) {
+    @GetMapping("find")
+    public List<Customer> getCustomerOlderThan(){
+        return customerRepository.findCustomerByAgeAfter(20);
     }
 
-    record GreetResponse(String greett, List<String> favProgrammingLanguages, Person person) {
-    }
+     record NewCustomerRequest(String name, String email, Integer age){}
 
-    @GetMapping("programminglist")
-    public Language getList() {
-        List<String> listOfProgrammingLanguages = Arrays.asList("Java", "Python", "C++");
-        Language language = new Language(listOfProgrammingLanguages);
-
-        return language;
-    }
-
-    @GetMapping("languages")
-    public List languages() {
-        List<String> languages = Arrays.asList("German, English");
-        return languages;
-    }
-
-
-    class Language {
-
-        List<String> listOfProgrammingLanguages;
-
-        public Language(List List) {
-            this.listOfProgrammingLanguages = List;
-        }
-
-        public List getProgrammingList() {
-            return listOfProgrammingLanguages;
-        }
-
+    @PostMapping
+    public void addCustomer(@RequestBody NewCustomerRequest request){
+        Customer customer = new Customer();
+        customer.setName(request.name());
+        customer.setEmail(request.email());
+        customer.setAge(request.age());
+        customerRepository.save(customer);
 
     }
 
+    @DeleteMapping("{customerId}")
+    public void deleteCustomer(@PathVariable Integer customerId){
+        customerRepository.deleteById(customerId);
+    }
+
+    @GetMapping("{customerId}")
+    public Customer getCustomerById(@PathVariable Integer customerId){
+        return customerRepository.getCustomerById(customerId);
+    }
+
+
+    @PutMapping("{customerId}")
+    public void updateCustomer(@PathVariable Integer customerId, @RequestBody NewCustomerRequest request){
+        Optional<Customer> optionalCustomer = customerRepository.findById(customerId);
+       if (optionalCustomer.isPresent()){
+           Customer customer = optionalCustomer.get();
+           customer.setName(request.name());
+           customer.setEmail(request.email());
+           customer.setAge(request.age());
+           customerRepository.save(customer);
+       }
+
+    }
 }
+
+
+
+
 
 
 
